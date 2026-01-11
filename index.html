@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Doorprize App</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            /* navy */
+            --secondary: #334155;
+            /* slate */
+            --accent: #f59e0b;
+            /* gold */
+            --bg: #f8fafc;
+
+            --card-font: 1rem;
+            --card-width: 180px;
+            --card-padding: 0.3rem;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f8fafc, #eef2f7);
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            color: #0f172a;
+            height: 100vh;
+        }
+
+        /* ===== HEADINGS ===== */
+        h5,
+        h6 {
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== PARTICIPANT LIST ===== */
+        .participant-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .card-participant {
+            width: var(--card-width);
+            /* 🔒 semua sama lebar */
+            font-size: var(--card-font);
+            padding: var(--card-padding);
+            border-radius: 14px;
+            background: white;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .card-participant .card-body {
+            font-weight: 600;
+            white-space: nowrap;
+            /* 1 baris */
+            overflow: hidden;
+            /* sembunyikan sisanya */
+            text-overflow: ellipsis;
+            /* ... */
+            text-align: center;
+        }
+
+        .card-participant:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 28px rgba(15, 23, 42, 0.12);
+
+        }
+
+        .card-participant .card-body {
+            font-weight: 600;
+        }
+
+        /* ===== SHUFFLE EFFECT ===== */
+        .shuffle {
+            background: linear-gradient(135deg, #fde68a, #f59e0b);
+            color: #78350f;
+            animation: pulse 0.25s infinite;
+        }
+
+        @keyframes pulse {
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            border: none;
+        }
+
+        .btn-success:disabled {
+            background: #cbd5e1;
+            color: #475569;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            border: none;
+            color: #78350f;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border: none;
+        }
+
+        .btn-dark {
+            background: linear-gradient(135deg, #020617, #0f172a);
+            border: none;
+        }
+
+        /* ===== TEXTAREA ===== */
+        textarea {
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, .04);
+        }
+
+        /* ===== WINNER SIDEBAR ===== */
+        #winnerList .card {
+            border-radius: 14px;
+            border: none;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        #winnerList .card-header {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            border-radius: 14px 14px 0 0;
+        }
+
+        /* ===== FULLSCREEN OVERLAY ===== */
+        #winnerOverlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at top, #020617, #000);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #f8fafc;
+            padding-top: 4rem;
+        }
+
+        #winnerOverlay h2 {
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #fbbf24;
+        }
+
+        .winner-name {
+            font-size: 5.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-top: 30px;
+            text-shadow: 0 10px 40px rgba(0, 0, 0, .6);
+            animation: pop 0.6s ease;
+        }
+
+        #winnerAll {
+            margin-top: 40px;
+            font-size: 1.8rem;
+            line-height: 2.4rem;
+        }
+
+        /* ===== MC MODE ===== */
+        /* .mc-mode .card-participant {
+            font-size: 1.6rem;
+        } */
+
+        /* .mc-mode h5,
+        .mc-mode h6 {
+            font-size: 2.2rem;
+        } */
+
+        /* ===== AUDIENCE MODE ===== */
+        .audience-mode #nameInput,
+        .audience-mode #saveBtn,
+        .audience-mode .btn-danger,
+        .audience-mode .col-3 {
+            display: none !important;
+        }
+
+        /* Lebarkan area peserta */
+        .audience-mode .col-7 {
+            width: 85%;
+        }
+
+        .audience-mode .col-2 {
+            width: 15%;
+        }
+
+        /* Perbesar kartu peserta */
+        /* .audience-mode .card-participant {
+            font-size: 2rem;
+            padding: 1.5rem;
+        } */
+
+        /* Judul lebih besar */
+        /* .audience-mode h5,
+        .audience-mode h6 {
+            font-size: 2.5rem;
+        } */
+    </style>
+</head>
+
+<body>
+
+    <!-- AUDIO -->
+    <audio id="drumSound" src="drum_roll.mp3"></audio>
+    <audio id="winSound" src="single_fireworks.mp3"></audio>
+
+    <!-- FULLSCREEN OVERLAY -->
+    <div id="winnerOverlay" class="text-center">
+        <h2 class="mb-4">🏆 Selamat Kepada: </h2>
+        <div id="winnerName" class="winner-name"></div>
+        <div id="winnerAll" class="mt-4 fs-3 fw-semibold"></div>
+
+        <button class="btn btn-light mt-4" onclick="closeOverlay()">Tutup</button>
+    </div>
+
+    <div class="p-3">
+        <div class="d-flex justify-content-end gap-3">
+            <!-- <button class="btn btn-outline-secondary me-2" onclick="toggleAudience()">
+                👥 Audience Mode
+            </button> -->
+
+            <button class="btn btn-dark text-end" onclick="toggleMC()">📺 Full Screen</button>
+        </div>
+        <hr>
+        <div class="row">
+
+            <!-- COL 3 INPUT -->
+            <div class="col-3">
+                <h5 class="fw-bold text-primary">Peserta</h5>
+                <textarea id="nameInput" class="form-control mb-2" rows="15" placeholder="1 baris = 1 nama"></textarea>
+
+                <button id="saveBtn" class="btn btn-primary w-100 mb-2">💾 Save Peserta</button>
+                <button class="btn btn-danger w-100" onclick="resetAll()">🔄 Reset Semua</button>
+            </div>
+
+            <!-- COL 7 PESERTA -->
+            <div class="col-7">
+                <h5 class="fw-bold">Daftar Peserta [Total : <d id="totalPeserta">0</d>]</h5>
+                <div id="participantList" class="participant-container mb-3"></div>
+
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <button class="btn btn-success drawPrizeButton" id="drawPrize1">🎁 Doorprize 1</button>
+                    <button class="btn btn-success drawPrizeButton" id="drawPrize2">🎁 Doorprize 2</button>
+                    <button class="btn btn-success drawPrizeButton" id="drawPrize3">🎁 Doorprize 3</button>
+                    <button class="btn btn-success drawPrizeButton" id="drawPrize4">🎁 Doorprize 4</button>
+                    <button class="btn btn-success drawPrizeButton" id="drawPrize5">🎁 Doorprize 5</button>
+
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2" onclick="nextPrize()" disabled>
+                        ⏭️ Roll
+                    </button>
+                </div>
+            </div>
+
+            <!-- COL 2 WINNERS -->
+            <div class="col-2">
+                <h6 class="fw-bold text-center">🏆 Pemenang</h6>
+                <div id="winnerList"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_TEXT = 'dp_text';
+        const STORAGE_WINNER = 'dp_winners';
+        const STORAGE_ORIGINAL = 'dp_original_text';
+
+        let currentPrize = 0;
+        const MAX_PRIZE = 5;
+
+
+        const prizeConfig = { 1: 4, 2: 3, 3: 5, 4: 6, 5: 2 };
+        let isDrawing = false;
+
+        function parseNames(text) {
+            return text.split('\n').map(n => n.trim()).filter(n => n);
+        }
+
+        function renderParticipants() {
+            getTotalParticipants();
+            const names = parseNames($('#nameInput').val());
+            const el = $('#participantList').empty();
+            names.forEach(n => {
+                el.append(`<div class="card card-participant shadow-sm">
+            <div class="card-body text-center">${n}</div></div>`);
+            });
+            ;
+        }
+
+        function renderWinners() {
+            const data = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+            const el = $('#winnerList').empty();
+            Object.keys(prizeConfig).forEach(p => {
+                el.append(`<div class="card mb-2">
+            <div class="card-header fw-bold">Doorprize ${p}</div>
+            <div class="card-body p-2">
+            ${(data[p] || []).map(n => `<div>• ${n}</div>`).join('')}
+            </div></div>`);
+            });
+        }
+
+        function drawPrize(prizeNo) {
+            if (isDrawing) return;
+            isDrawing = true;
+            currentPrize = prizeNo;
+
+            let names = parseNames($('#nameInput').val());
+            const count = prizeConfig[prizeNo];
+            if (names.length < count) {
+                alert('Peserta tidak mencukupi');
+                isDrawing = false;
+                return;
+            }
+
+            $('#drumSound')[0].play();
+
+            let interval = setInterval(() => {
+                $('.card-participant').removeClass('shuffle')
+                    .eq(Math.floor(Math.random() * names.length))
+                    .addClass('shuffle');
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(interval);
+
+                let winners = [];
+                for (let i = 0; i < count; i++) {
+                    const idx = Math.floor(Math.random() * names.length);
+                    winners.push(names[idx]);
+                    names.splice(idx, 1);
+                }
+
+                $('#nameInput').val(names.join('\n'));
+                localStorage.setItem(STORAGE_TEXT, names.join('\n'));
+
+                let all = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+                all[prizeNo] = winners;
+                localStorage.setItem(STORAGE_WINNER, JSON.stringify(all));
+
+                renderParticipants();
+                renderWinners();
+
+                showFullscreenWinners(winners);
+                $('#nextPrizeBtn').prop('disabled', false);
+                isDrawing = false;
+            }, 5000);
+        }
+
+        function showFullscreenWinners(winners) {
+            let i = 0;
+            $('#winnerOverlay').fadeIn();
+            $('#winnerName').text('');
+            $('#winnerAll').html('');
+
+            const winSound = $('#winSound')[0];
+
+            let interval = setInterval(() => {
+                if (i >= winners.length) {
+                    clearInterval(interval);
+
+                    // tampilkan semua pemenang
+                    $('#winnerName').hide();
+                    $('#winnerAll').html(
+                        winners.map(n => `<div>🏆 ${n}</div>`).join('')
+                    );
+
+                    return;
+                }
+                launchConfetti();
+                winSound.currentTime = 0;
+                winSound.play();
+
+                $('#winnerName')
+                    .show()
+                    .text(winners[i]);
+
+                i++;
+            }, 1800);
+            disableUsedButtons();
+
+        }
+
+
+        function closeOverlay() {
+            stopAllSounds();
+            $('#winnerOverlay').fadeOut();
+        }
+
+        function resetAll() {
+            stopAllSounds();
+            if (!confirm('Yakin reset semua data?')) return;
+
+            currentPrize = 0;
+            $('#nextPrizeBtn').prop('disabled', false);
+
+            const original = localStorage.getItem(STORAGE_ORIGINAL) || '';
+            localStorage.removeItem(STORAGE_WINNER);
+            localStorage.setItem(STORAGE_TEXT, original);
+
+            $('#nameInput').val(original);
+            renderParticipants();
+            renderWinners();
+            disableUsedButtons();
+        }
+
+
+
+
+
+        $('#saveBtn').click(() => {
+            const text = $('#nameInput').val();
+
+            // data aktif
+            localStorage.setItem(STORAGE_TEXT, text);
+
+            // baseline reset (SELALU UPDATE)
+            localStorage.setItem(STORAGE_ORIGINAL, text);
+
+            // reset hasil doorprize karena data berubah
+            localStorage.removeItem(STORAGE_WINNER);
+            currentPrize = 0;
+
+            renderParticipants();
+            renderWinners();
+            disableUsedButtons();
+            $('#nextPrizeBtn').prop('disabled', false);
+        });
+
+
+        $(document).ready(() => {
+            $('#nameInput').val(localStorage.getItem(STORAGE_TEXT) || '');
+            renderParticipants();
+            renderWinners();
+            disableUsedButtons();
+            $('#nextPrizeBtn').prop('disabled', false);
+            ;
+
+        });
+        function disableUsedButtons() {
+            const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+
+            // reset dulu semua tombol
+            for (let i = 1; i <= 5; i++) {
+                $(`button#drawPrize${i}`)
+                    .prop('disabled', false)
+                    .removeClass('btn-secondary')
+                    .addClass('btn-success');
+            }
+
+            // disable yang sudah dipakai
+            Object.keys(winners).forEach(p => {
+                $(`button#drawPrize${p}`)
+                    .prop('disabled', true)
+                    .removeClass('btn-success')
+                    .addClass('btn-secondary');
+            });
+        }
+
+
+        function toggleMC() {
+            $('body').toggleClass('mc-mode');
+
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+            toggleAudience();
+        }
+
+        function launchConfetti() {
+            confetti({
+                particleCount: 180,
+                spread: 120,
+                origin: { y: 0.6 },
+                zIndex: 10001 // 🔥 DI ATAS overlay (9999)
+            });
+
+            setTimeout(() => {
+                confetti({
+                    particleCount: 120,
+                    spread: 160,
+                    origin: { y: 0.7 },
+                    zIndex: 10001
+                });
+            }, 800);
+        }
+
+        function nextPrize() {
+            stopAllSounds();
+            let next = currentPrize + 1;
+
+            while (next <= MAX_PRIZE) {
+                const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+                if (!winners[next]) break;
+                next++;
+            }
+
+            if (next <= MAX_PRIZE) {
+                drawPrize(next);
+                $('#nextPrizeBtn').prop('disabled', true);
+            } else {
+                alert('Semua doorprize sudah selesai 🎉');
+                $('#nextPrizeBtn').prop('disabled', true);
+            }
+        }
+
+        function stopAllSounds() {
+            const drum = $('#drumSound')[0];
+            const win = $('#winSound')[0];
+
+            if (drum) {
+                drum.pause();
+                drum.currentTime = 0;
+            }
+
+            if (win) {
+                win.pause();
+                win.currentTime = 0;
+            }
+        }
+        function toggleAudience() {
+            $('body').toggleClass('audience-mode');
+
+            const isAudience = $('body').hasClass('audience-mode');
+            $('#nameInput').prop('disabled', isAudience);
+
+
+        }
+
+
+
+        function getTotalParticipants() {
+            let totalPeserta = parseNames($('#nameInput').val()).length;
+            $('#totalPeserta').text(totalPeserta);
+        }
+
+
+    </script>
+
+</body>
+
+</html>
