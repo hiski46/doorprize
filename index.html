@@ -29,7 +29,7 @@
             background: linear-gradient(180deg, #f8fafc, #eef2f7);
             font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
             color: #0f172a;
-            height: 100vh;
+            min-height: 100vh;
         }
 
         /* ===== HEADINGS ===== */
@@ -231,7 +231,7 @@
         <div id="winnerName" class="winner-name"></div>
         <div id="winnerAll" class="mt-4 fs-3 fw-semibold"></div>
 
-        <button class="btn btn-light mt-4" onclick="closeOverlay()">Tutup</button>
+        <button class="btn btn-light mt-4 d-none" id="btn-close-overlay" onclick="closeOverlay()">Tutup</button>
     </div>
 
     <div class="p-3">
@@ -259,17 +259,17 @@
                 <h5 class="fw-bold">Daftar Peserta [Total : <d id="totalPeserta">0</d>]</h5>
                 <div id="participantList" class="participant-container mb-3"></div>
 
-                <div class="d-flex justify-content-center flex-wrap gap-2">
+                <!-- <div class="d-flex justify-content-center flex-wrap gap-2">
                     <button class="btn btn-success drawPrizeButton" id="drawPrize1">🎁 Doorprize 1</button>
                     <button class="btn btn-success drawPrizeButton" id="drawPrize2">🎁 Doorprize 2</button>
                     <button class="btn btn-success drawPrizeButton" id="drawPrize3">🎁 Doorprize 3</button>
                     <button class="btn btn-success drawPrizeButton" id="drawPrize4">🎁 Doorprize 4</button>
                     <button class="btn btn-success drawPrizeButton" id="drawPrize5">🎁 Doorprize 5</button>
 
-                </div>
+                </div> -->
                 <div class="d-flex justify-content-center mt-3">
                     <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2" onclick="nextPrize()" disabled>
-                        ⏭️ Roll
+                        ⏭️ Spin
                     </button>
                 </div>
             </div>
@@ -287,12 +287,24 @@
         const STORAGE_TEXT = 'dp_text';
         const STORAGE_WINNER = 'dp_winners';
         const STORAGE_ORIGINAL = 'dp_original_text';
+        const STORAGE_STATE = 'dp_state';
 
-        let currentPrize = 0;
-        const MAX_PRIZE = 5;
+        let currentPrizeIndex = 0;
+        let currentSpin = 0;
 
 
-        const prizeConfig = { 1: 4, 2: 3, 3: 5, 4: 6, 5: 2 };
+        const prizeConfig = [
+            { id: 1, label: '300.000', total: 15, spins: 3, perSpin: 5 },
+            { id: 2, label: '400.000', total: 16, spins: 4, perSpin: 4 },
+            { id: 3, label: '500.000', total: 8, spins: 2, perSpin: 4 },
+            { id: 4, label: '700.000', total: 4, spins: 1, perSpin: 4 },
+            { id: 5, label: '850.000', total: 3, spins: 1, perSpin: 3 },
+            { id: 6, label: '1.000.000', total: 3, spins: 1, perSpin: 3 },
+            { id: 7, label: '1.500.000', total: 2, spins: 1, perSpin: 2 },
+            { id: 8, label: '1.750.000', total: 1, spins: 1, perSpin: 1 },
+            { id: 9, label: '2.000.000', total: 1, spins: 1, perSpin: 1 }
+        ];
+
         let isDrawing = false;
 
         function parseNames(text) {
@@ -312,24 +324,32 @@
 
         function renderWinners() {
             const data = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+
             const el = $('#winnerList').empty();
             Object.keys(prizeConfig).forEach(p => {
+
+                let tmpConfig = prizeConfig[p];
+
                 el.append(`<div class="card mb-2">
-            <div class="card-header fw-bold">Doorprize ${p}</div>
+            <div class="card-header fw-bold"> ${tmpConfig.total} orang | Rp. ${tmpConfig.label}</div>
             <div class="card-body p-2">
-            ${(data[p] || []).map(n => `<div>• ${n}</div>`).join('')}
+            ${(data[tmpConfig.id] || []).map(n => `<div>• ${n}</div>`).join('')}
             </div></div>`);
             });
         }
 
-        function drawPrize(prizeNo) {
+        function drawCurrentPrize() {
             if (isDrawing) return;
             isDrawing = true;
-            currentPrize = prizeNo;
+
+            const prize = prizeConfig[currentPrizeIndex];
+            if (!prize) {
+                alert('Semua doorprize selesai 🎉');
+                return;
+            }
 
             let names = parseNames($('#nameInput').val());
-            const count = prizeConfig[prizeNo];
-            if (names.length < count) {
+            if (names.length < prize.perSpin) {
                 alert('Peserta tidak mencukupi');
                 isDrawing = false;
                 return;
@@ -337,71 +357,92 @@
 
             $('#drumSound')[0].play();
 
-            let interval = setInterval(() => {
-                $('.card-participant').removeClass('shuffle')
+            // animasi shuffle
+            let shuffleInterval = setInterval(() => {
+                $('.card-participant')
+                    .removeClass('shuffle')
                     .eq(Math.floor(Math.random() * names.length))
                     .addClass('shuffle');
             }, 100);
 
             setTimeout(() => {
-                clearInterval(interval);
+                clearInterval(shuffleInterval);
 
                 let winners = [];
-                for (let i = 0; i < count; i++) {
+                for (let i = 0; i < prize.perSpin; i++) {
                     const idx = Math.floor(Math.random() * names.length);
                     winners.push(names[idx]);
                     names.splice(idx, 1);
                 }
 
+                // update peserta
                 $('#nameInput').val(names.join('\n'));
                 localStorage.setItem(STORAGE_TEXT, names.join('\n'));
 
+                // simpan winner
                 let all = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
-                all[prizeNo] = winners;
+                if (!all[prize.id]) all[prize.id] = [];
+                all[prize.id].push(...winners);
+
                 localStorage.setItem(STORAGE_WINNER, JSON.stringify(all));
 
                 renderParticipants();
                 renderWinners();
 
-                showFullscreenWinners(winners);
+                showFullscreenWinners(winners, prize.label);
+
+                // update spin
+                currentSpin++;
+                if (currentSpin >= prize.spins) {
+                    currentSpin = 0;
+                    currentPrizeIndex++;
+                }
+                localStorage.setItem(STORAGE_STATE, JSON.stringify({
+                    currentSpin,
+                    currentPrizeIndex
+                }));
+                console.log(currentSpin);
+                console.log(currentPrizeIndex);
+
                 $('#nextPrizeBtn').prop('disabled', false);
                 isDrawing = false;
+
             }, 5000);
         }
 
-        function showFullscreenWinners(winners) {
+        function showFullscreenWinners(winners, label) {
+            $('#btn-close-overlay').addClass('d-none');
+
             let i = 0;
             $('#winnerOverlay').fadeIn();
             $('#winnerName').text('');
             $('#winnerAll').html('');
+            $('#winnerAll').append(`<div class="mb-3">💰 Rp ${label}</div>`);
 
             const winSound = $('#winSound')[0];
 
             let interval = setInterval(() => {
                 if (i >= winners.length) {
                     clearInterval(interval);
-
-                    // tampilkan semua pemenang
-                    $('#winnerName').hide();
-                    $('#winnerAll').html(
+                    $('#winnerAll').append(
                         winners.map(n => `<div>🏆 ${n}</div>`).join('')
                     );
-
+                    $('#winnerName').text('');
+                    $('#btn-close-overlay').removeClass('d-none');
                     return;
                 }
+
                 launchConfetti();
                 winSound.currentTime = 0;
                 winSound.play();
 
-                $('#winnerName')
-                    .show()
-                    .text(winners[i]);
-
+                $('#winnerName').text(winners[i]);
                 i++;
             }, 1800);
-            disableUsedButtons();
+
 
         }
+
 
 
         function closeOverlay() {
@@ -413,7 +454,12 @@
             stopAllSounds();
             if (!confirm('Yakin reset semua data?')) return;
 
-            currentPrize = 0;
+            currentPrizeIndex = 0;
+            currentSpin = 0;
+            localStorage.setItem(STORAGE_STATE, JSON.stringify({
+                currentSpin,
+                currentPrizeIndex
+            }));
             $('#nextPrizeBtn').prop('disabled', false);
 
             const original = localStorage.getItem(STORAGE_ORIGINAL) || '';
@@ -451,6 +497,12 @@
 
 
         $(document).ready(() => {
+            const state = JSON.parse(localStorage.getItem(STORAGE_STATE));
+            if (state) {
+                currentSpin = state.currentSpin || 0;
+                currentPrizeIndex = state.currentPrizeIndex || 0;
+            }
+
             $('#nameInput').val(localStorage.getItem(STORAGE_TEXT) || '');
             renderParticipants();
             renderWinners();
@@ -510,22 +562,8 @@
         }
 
         function nextPrize() {
-            stopAllSounds();
-            let next = currentPrize + 1;
-
-            while (next <= MAX_PRIZE) {
-                const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
-                if (!winners[next]) break;
-                next++;
-            }
-
-            if (next <= MAX_PRIZE) {
-                drawPrize(next);
-                $('#nextPrizeBtn').prop('disabled', true);
-            } else {
-                alert('Semua doorprize sudah selesai 🎉');
-                $('#nextPrizeBtn').prop('disabled', true);
-            }
+            $('#nextPrizeBtn').prop('disabled', true);
+            drawCurrentPrize();
         }
 
         function stopAllSounds() {
