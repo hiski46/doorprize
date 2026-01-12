@@ -47,13 +47,13 @@
 
         .card-participant {
             width: var(--card-width);
-            /* 🔒 semua sama lebar */
-            font-size: var(--card-font);
-            padding: var(--card-padding);
-            border-radius: 14px;
-            background: white;
-            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
-            transition: transform .2s ease, box-shadow .2s ease;
+            font-size: 0.95rem;
+            padding: 0.4rem;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+            transition: all .25s ease;
         }
 
         .card-participant .card-body {
@@ -67,10 +67,11 @@
             text-align: center;
         }
 
-        .card-participant:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 28px rgba(15, 23, 42, 0.12);
 
+
+        .card-participant:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
         }
 
         .card-participant .card-body {
@@ -79,9 +80,16 @@
 
         /* ===== SHUFFLE EFFECT ===== */
         .shuffle {
-            background: linear-gradient(135deg, #fde68a, #f59e0b);
+            background: linear-gradient(135deg, #fde68a, #fbbf24);
             color: #78350f;
-            animation: pulse 0.25s infinite;
+            border: 1px solid #f59e0b;
+            animation: pulse 0.3s infinite;
+        }
+
+        #nextPrizeBtn {
+            padding: 0.9rem 3rem;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
         }
 
         @keyframes pulse {
@@ -137,10 +145,16 @@
         }
 
         #winnerList .card-header {
-            background: var(--primary);
-            color: white;
-            font-weight: 600;
-            border-radius: 14px 14px 0 0;
+            background: linear-gradient(135deg, #020617, #0f172a);
+            color: #fbbf24;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        #winnerList .card-body div {
+            font-size: 0.9rem;
+            padding: 3px 0;
         }
 
         /* ===== FULLSCREEN OVERLAY ===== */
@@ -158,24 +172,19 @@
         }
 
         #winnerOverlay h2 {
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #fbbf24;
+            font-size: 2.2rem;
         }
 
         .winner-name {
-            font-size: 5.5rem;
-            font-weight: 800;
-            text-align: center;
-            margin-top: 30px;
-            text-shadow: 0 10px 40px rgba(0, 0, 0, .6);
-            animation: pop 0.6s ease;
+            font-size: 6rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #fbbf24;
         }
 
         #winnerAll {
-            margin-top: 40px;
-            font-size: 1.8rem;
-            line-height: 2.4rem;
+            font-size: 2rem;
+            opacity: 0.9;
         }
 
         /* ===== MC MODE ===== */
@@ -191,7 +200,6 @@
         /* ===== AUDIENCE MODE ===== */
         .audience-mode #nameInput,
         .audience-mode #saveBtn,
-        .audience-mode .btn-danger,
         .audience-mode .col-3 {
             display: none !important;
         }
@@ -216,6 +224,9 @@
         .audience-mode h6 {
             font-size: 2.5rem;
         } */
+        .letter-spacing {
+            letter-spacing: 3px;
+        }
     </style>
 </head>
 
@@ -235,12 +246,21 @@
     </div>
 
     <div class="p-3">
-        <div class="d-flex justify-content-end gap-3">
+        <div class="d-flex justify-content-between gap-3">
+            <div class="text-center col-11">
+                <img src="https://mandiricoal.co.id/wp-content/uploads/2019/02/section-mandiricoal-logo.png" height="60"
+                    alt="">
+                <h2 class="fw-bold text-uppercase letter-spacing">
+                    Doorprize Night
+                </h2>
+            </div>
             <!-- <button class="btn btn-outline-secondary me-2" onclick="toggleAudience()">
                 👥 Audience Mode
             </button> -->
+            <div class="col-1">
+                <button class="btn btn-dark text-end" onclick="toggleMC()">📺 Full Screen</button>
 
-            <button class="btn btn-dark text-end" onclick="toggleMC()">📺 Full Screen</button>
+            </div>
         </div>
         <hr>
         <div class="row">
@@ -269,7 +289,7 @@
                 </div> -->
                 <div class="d-flex justify-content-center mt-3">
                     <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2" onclick="nextPrize()" disabled>
-                        ⏭️ Spin
+                        ⏭️ SPIN DOORPRIZE
                     </button>
                 </div>
             </div>
@@ -324,19 +344,73 @@
 
         function renderWinners() {
             const data = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
-
             const el = $('#winnerList').empty();
+            if (hasWinner()) {
+                lockParticipantInput();
+            } else {
+                unlockParticipantInput();
+            }
+
             Object.keys(prizeConfig).forEach(p => {
+                let cfg = prizeConfig[p];
+                let winners = data[cfg.id] || [];
 
-                let tmpConfig = prizeConfig[p];
-
-                el.append(`<div class="card mb-2">
-            <div class="card-header fw-bold"> ${tmpConfig.total} orang | Rp. ${tmpConfig.label}</div>
+                el.append(`
+        <div class="card mb-2">
+            <div class="card-header fw-bold">
+                ${cfg.total} orang | Rp. ${cfg.label}
+            </div>
             <div class="card-body p-2">
-            ${(data[tmpConfig.id] || []).map(n => `<div>• ${n}</div>`).join('')}
-            </div></div>`);
+                ${winners.map((n, i) => `
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>${i + 1}. ${n}</span>
+                        <button class="btn btn-sm btn-outline-danger px-2 py-0"
+                            title="Tidak Hadir"
+                            onclick="removeWinner(${cfg.id}, '${n}')">
+                            ✕
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`);
             });
         }
+
+        function removeWinner(prizeId, name) {
+            if (!confirm(`"${name}" tidak hadir?\nSpin ulang 1 nama?`)) return;
+
+            let winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+            let participants = parseNames($('#nameInput').val());
+
+            // 1. hapus dari list pemenang
+            winners[prizeId] = (winners[prizeId] || []).filter(n => n !== name);
+
+
+            // 3. spin ulang 1 orang
+            if (participants.length === 0) {
+                alert('Peserta habis');
+                return;
+            }
+
+            const idx = Math.floor(Math.random() * participants.length);
+            const newWinner = participants[idx];
+            participants.splice(idx, 1);
+
+            winners[prizeId].push(newWinner);
+
+            // simpan ulang
+            localStorage.setItem(STORAGE_WINNER, JSON.stringify(winners));
+            localStorage.setItem(STORAGE_TEXT, participants.join('\n'));
+
+            $('#nameInput').val(participants.join('\n'));
+
+            renderParticipants();
+            renderWinners();
+
+            // tampilkan overlay pemenang pengganti
+            showFullscreenWinners([newWinner], prizeConfig.find(p => p.id === prizeId).label);
+        }
+
 
         function drawCurrentPrize() {
             if (isDrawing) return;
@@ -470,6 +544,7 @@
             renderParticipants();
             renderWinners();
             disableUsedButtons();
+            unlockParticipantInput();
         }
 
 
@@ -508,7 +583,9 @@
             renderWinners();
             disableUsedButtons();
             $('#nextPrizeBtn').prop('disabled', false);
-            ;
+            if (hasWinner()) {
+                lockParticipantInput();
+            }
 
         });
         function disableUsedButtons() {
@@ -596,6 +673,20 @@
             $('#totalPeserta').text(totalPeserta);
         }
 
+        function hasWinner() {
+            const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+            return Object.values(winners).some(arr => arr.length > 0);
+        }
+
+        function lockParticipantInput() {
+            $('#nameInput').prop('disabled', true);
+            $('#saveBtn').prop('disabled', true);
+        }
+
+        function unlockParticipantInput() {
+            $('#nameInput').prop('disabled', false);
+            $('#saveBtn').prop('disabled', false);
+        }
 
     </script>
 
