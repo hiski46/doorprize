@@ -243,7 +243,7 @@
 
     <!-- FULLSCREEN OVERLAY -->
     <div id="winnerOverlay" class="text-center">
-        <h2 class="mb-4">🏆 Selamat Kepada: </h2>
+        <h2 class="mb-4"> Selamat Kepada: </h2>
         <div id="winnerName" class="winner-name"></div>
         <div id="winnerAll" class="mt-4 fs-3 fw-semibold"></div>
 
@@ -292,16 +292,25 @@
                     <button class="btn btn-success drawPrizeButton" id="drawPrize5">🎁 Doorprize 5</button>
 
                 </div> -->
-                <div class="d-flex justify-content-center mt-3">
-                    <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2" onclick="nextPrize()" disabled>
+                <div class="d-flex flex-column align-items-center mt-3">
+                    <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2 mb-2" onclick="nextPrize()" disabled>
                         ⏭️ SPIN DOORPRIZE
                     </button>
+
+                    <div id="nextPrizeInfo" class="fw-semibold text-secondary">
+                        🎁 Doorprize selanjutnya: -
+                    </div>
                 </div>
             </div>
 
             <!-- COL 2 WINNERS -->
             <div class="col-2">
                 <h6 class="fw-bold text-center">🏆 Pemenang</h6>
+
+                <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="exportWinners()">
+                    📤 Export Pemenang
+                </button>
+
                 <div id="winnerList"></div>
             </div>
 
@@ -387,33 +396,57 @@
             let winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
             let participants = parseNames($('#nameInput').val());
 
-            // 1. hapus dari list pemenang
+            // hapus pemenang lama
             winners[prizeId] = (winners[prizeId] || []).filter(n => n !== name);
+            localStorage.setItem(STORAGE_WINNER, JSON.stringify(winners));
+
+            // lakukan spin ulang
+            spinForSingleWinner(participants, (newWinner, updatedParticipants) => {
+
+                // simpan peserta terbaru
+                $('#nameInput').val(updatedParticipants.join('\n'));
+                localStorage.setItem(STORAGE_TEXT, updatedParticipants.join('\n'));
+
+                // simpan pemenang baru
+                if (!winners[prizeId]) winners[prizeId] = [];
+                winners[prizeId].push(newWinner);
+                localStorage.setItem(STORAGE_WINNER, JSON.stringify(winners));
+
+                renderParticipants();
+                renderWinners();
+
+                // tampilkan overlay pemenang
+                const prizeLabel = prizeConfig.find(p => p.id === prizeId).label;
+                showFullscreenWinners([newWinner], prizeLabel);
+            });
+        }
 
 
-            // 3. spin ulang 1 orang
+        function spinForSingleWinner(participants, callback) {
             if (participants.length === 0) {
                 alert('Peserta habis');
                 return;
             }
 
-            const idx = Math.floor(Math.random() * participants.length);
-            const newWinner = participants[idx];
-            participants.splice(idx, 1);
+            $('#drumSound')[0].play();
 
-            winners[prizeId].push(newWinner);
+            let shuffleInterval = setInterval(() => {
+                $('.card-participant')
+                    .removeClass('shuffle')
+                    .eq(Math.floor(Math.random() * participants.length))
+                    .addClass('shuffle');
+            }, 100);
 
-            // simpan ulang
-            localStorage.setItem(STORAGE_WINNER, JSON.stringify(winners));
-            localStorage.setItem(STORAGE_TEXT, participants.join('\n'));
+            setTimeout(() => {
+                clearInterval(shuffleInterval);
+                $('.card-participant').removeClass('shuffle');
 
-            $('#nameInput').val(participants.join('\n'));
+                const idx = Math.floor(Math.random() * participants.length);
+                const winner = participants[idx];
+                participants.splice(idx, 1);
 
-            renderParticipants()
-            renderWinners();
-
-            // tampilkan overlay pemenang pengganti
-            showFullscreenWinners([newWinner], prizeConfig.find(p => p.id === prizeId).label);
+                callback(winner, participants);
+            }, 4000); // durasi spin
         }
 
 
@@ -484,6 +517,7 @@
                 console.log(currentPrizeIndex);
 
                 $('#nextPrizeBtn').prop('disabled', false);
+                updateNextPrizeInfo();
                 isDrawing = false;
 
             }, 5000);
@@ -496,17 +530,26 @@
             $('#winnerOverlay').fadeIn();
             $('#winnerName').text('');
             $('#winnerAll').html('');
-            $('#winnerAll').append(`<div class="mb-3">💰 Rp ${label}</div>`);
+            // $('#winnerAll').append(`<div class="mb-3">💰 Rp ${label}</div>`);
 
             const winSound = $('#winSound')[0];
 
+            launchConfetti();
+            winSound.currentTime = 0;
+            winSound.play();
+            $('#winnerName').text(winners[i]);
+            i++;
+
+            // === NAMA BERIKUTNYA PAKAI INTERVAL ===
             let interval = setInterval(() => {
                 if (i >= winners.length) {
                     clearInterval(interval);
+
                     $('#winnerAll').append(
                         winners.map(n => `<div>🏆 ${n}</div>`).join('')
                     );
                     $('#winnerName').text('');
+                    $('#winnerAll').append(`<div class="mt-5"><span style='font-size:14px;'>Mendapatkan doorprize</span><br>💰 Rp ${label}</div>`);
                     $('#btn-close-overlay').removeClass('d-none');
                     return;
                 }
@@ -517,7 +560,7 @@
 
                 $('#winnerName').text(winners[i]);
                 i++;
-            }, 1800);
+            }, 5000);
 
 
         }
@@ -550,6 +593,7 @@
             renderWinners();
             disableUsedButtons();
             unlockParticipantInput();
+            updateNextPrizeInfo();
         }
 
 
@@ -572,6 +616,7 @@
             renderParticipants();
             renderWinners();
             disableUsedButtons();
+            updateNextPrizeInfo();
             $('#nextPrizeBtn').prop('disabled', false);
         });
 
@@ -587,6 +632,7 @@
             renderParticipants();
             renderWinners();
             disableUsedButtons();
+            updateNextPrizeInfo();
             $('#nextPrizeBtn').prop('disabled', false);
             if (hasWinner()) {
                 lockParticipantInput();
@@ -641,6 +687,14 @@
                     zIndex: 10001
                 });
             }, 800);
+            setTimeout(() => {
+                confetti({
+                    particleCount: 120,
+                    spread: 160,
+                    origin: { y: 0.7 },
+                    zIndex: 10001
+                });
+            }, 1800);
         }
 
         function nextPrize() {
@@ -692,6 +746,79 @@
             $('#nameInput').prop('disabled', false);
             $('#saveBtn').prop('disabled', false);
         }
+
+        function updateNextPrizeInfo() {
+            const prize = prizeConfig[currentPrizeIndex];
+
+            if (!prize) {
+                $('#nextPrizeInfo').html('🎉 Semua doorprize telah selesai');
+                return;
+            }
+
+            $('#nextPrizeInfo').html(`
+        🎁 Doorprize selanjutnya:
+        <span class="text-dark fw-bold">
+            Rp ${prize.label}
+        </span>
+        <small class="text-muted">
+            (${prize.perSpin} orang)
+        </small>
+    `);
+        }
+
+        function exportWinners() {
+            const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+
+            if (Object.keys(winners).length === 0) {
+                alert('Belum ada pemenang untuk diexport');
+                return;
+            }
+
+            let rows = [];
+            rows.push(['Kategori Doorprize', 'Nominal', 'Urutan', 'Nama Pemenang']);
+
+            prizeConfig.forEach(cfg => {
+                const list = winners[cfg.id] || [];
+                list.forEach((name, index) => {
+                    rows.push([
+                        `Doorprize ${cfg.id}`,
+                        `Rp ${cfg.label}`,
+                        index + 1,
+                        name
+                    ]);
+                });
+            });
+
+            downloadCSV(rows, `pemenang_doorprize_${new Date().toISOString().slice(0, 10)}.csv`);
+        }
+
+        function downloadCSV(rows, filename) {
+            const separator = ';'; // ← PENTING untuk Excel Indonesia
+
+            const csvContent = rows
+                .map(r =>
+                    r.map(v =>
+                        `"${String(v).replace(/"/g, '""')}"`
+                    ).join(separator)
+                )
+                .join('\n');
+
+            const blob = new Blob([csvContent], {
+                type: 'text/csv;charset=utf-8;'
+            });
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
 
     </script>
 
