@@ -415,6 +415,15 @@
                 <h2 class="fw-bold text-uppercase letter-spacing">
                     Doorprize Night
                 </h2>
+                <div class="d-flex flex-column align-items-center mt-3">
+                    <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2 mb-2" onclick="nextPrize()" disabled>
+                        ⏭️ SPIN DOORPRIZE
+                    </button>
+
+                    <div id="nextPrizeInfo" class="fw-semibold text-secondary">
+                        🎁 Doorprize selanjutnya: -
+                    </div>
+                </div>
             </div>
             <!-- <button class="btn btn-outline-secondary me-2" onclick="toggleAudience()">
                 👥 Audience Mode
@@ -449,15 +458,7 @@
                     <button class="btn btn-success drawPrizeButton" id="drawPrize5">🎁 Doorprize 5</button>
 
                 </div> -->
-                <div class="d-flex flex-column align-items-center mt-3">
-                    <button id="nextPrizeBtn" class="btn btn-lg btn-warning ms-2 mb-2" onclick="nextPrize()" disabled>
-                        ⏭️ SPIN DOORPRIZE
-                    </button>
 
-                    <div id="nextPrizeInfo" class="fw-semibold text-secondary">
-                        🎁 Doorprize selanjutnya: -
-                    </div>
-                </div>
             </div>
 
             <!-- COL 2 WINNERS -->
@@ -487,6 +488,12 @@
     <div class="d-flex justify-content-between">
 
     </div>
+    <!-- tombol hapus pemenang -->
+    <!-- <button class="btn btn-sm btn-outline-danger px-2 py-0"
+                            title="Tidak Hadir"
+                            onclick="removeWinner(${cfg.id}, '${n}')">
+                            ✕
+                        </button> -->
     <script>
         const STORAGE_TEXT = 'dp_text';
         const STORAGE_WINNER = 'dp_winners';
@@ -498,15 +505,17 @@
 
 
         const prizeConfig = [
-            { id: 1, label: '300.000', total: 15, spins: 3, perSpin: 5 },
-            { id: 2, label: '400.000', total: 16, spins: 4, perSpin: 4 },
-            { id: 3, label: '500.000', total: 8, spins: 2, perSpin: 4 },
-            { id: 4, label: '700.000', total: 4, spins: 1, perSpin: 4 },
-            { id: 5, label: '850.000', total: 3, spins: 1, perSpin: 3 },
-            { id: 6, label: '1.000.000', total: 3, spins: 1, perSpin: 3 },
-            { id: 7, label: '1.500.000', total: 2, spins: 1, perSpin: 2 },
-            { id: 8, label: '1.750.000', total: 1, spins: 1, perSpin: 1 },
-            { id: 9, label: '2.000.000', total: 1, spins: 1, perSpin: 1 }
+            { id: 1, label: '300.000', total: 16, spins: 2, perSpin: 8 },
+            { id: 2, label: '400.000', total: 16, spins: 2, perSpin: 8 },
+            { id: 3, label: '500.000', total: 12, spins: 2, perSpin: 6 },
+            { id: 4, label: '600.000', total: 8, spins: 2, perSpin: 4 },
+            { id: 5, label: '700.000', total: 8, spins: 2, perSpin: 4 },
+            { id: 6, label: '800.000', total: 5, spins: 1, perSpin: 5 },
+            { id: 7, label: '900.000', total: 4, spins: 1, perSpin: 4 },
+            { id: 8, label: '1.000.000', total: 3, spins: 1, perSpin: 3 },
+            { id: 9, label: '1.500.000', total: 2, spins: 1, perSpin: 2 },
+            { id: 10, label: '1.800.000', total: 1, spins: 1, perSpin: 1 },
+            { id: 11, label: '2.000.000', total: 1, spins: 1, perSpin: 1 }
         ];
 
         let isDrawing = false;
@@ -543,7 +552,7 @@
         <div class="card mb-2">
             <div class="card-header fw-bold">
                 <div class="d-flex justify-content-between">
-                   <span> ${cfg.total} orang | Rp. ${cfg.label} </span>
+                   <small class=""> ${cfg.total} orang | Rp. ${cfg.label} </small>
     
                       <button
         class="btn btn-sm btn-outline-warning border-0 px-1 py-0"
@@ -557,11 +566,7 @@
                 ${winners.map((n, i) => `
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span>${i + 1}. ${n}</span>
-                        <button class="btn btn-sm btn-outline-danger px-2 py-0"
-                            title="Tidak Hadir"
-                            onclick="removeWinner(${cfg.id}, '${n}')">
-                            ✕
-                        </button>
+                        
                     </div>
                 `).join('')}
             </div>
