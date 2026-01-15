@@ -139,7 +139,7 @@
 
         /* ===== WINNER SIDEBAR ===== */
         #winnerList {
-            max-height: 80vh;
+            max-height: 60vh;
             overflow-y: scroll;
         }
 
@@ -516,18 +516,18 @@
 
 
         const prizeConfig = [
-            { id: 1, label: '300.000', total: 16, spins: 2, perSpin: 8 },
-            { id: 2, label: '400.000', total: 16, spins: 2, perSpin: 8 },
-            { id: 3, label: '500.000', total: 12, spins: 2, perSpin: 6 },
-            { id: 4, label: '600.000', total: 8, spins: 2, perSpin: 4 },
-            { id: 5, label: '700.000', total: 8, spins: 2, perSpin: 4 },
-            { id: 6, label: '800.000', total: 5, spins: 1, perSpin: 5 },
-            { id: 7, label: '900.000', total: 4, spins: 1, perSpin: 4 },
-            { id: 8, label: '1.000.000', total: 3, spins: 1, perSpin: 3 },
-            { id: 9, label: '1.500.000', total: 2, spins: 1, perSpin: 2 },
-            { id: 10, label: '1.800.000', total: 1, spins: 1, perSpin: 1 },
-            { id: 11, label: '2.000.000', total: 1, spins: 1, perSpin: 1 }
+            { id: 1, label: '500.000', total: 16, spins: 2, perSpin: 8 },
+            { id: 2, label: '600.000', total: 12, spins: 2, perSpin: 6 },
+            { id: 3, label: '700.000', total: 10, spins: 2, perSpin: 5 },
+            { id: 4, label: '800.000', total: 8, spins: 1, perSpin: 8 },
+            { id: 5, label: '900.000', total: 6, spins: 1, perSpin: 6 },
+            { id: 6, label: '1.000.000', total: 4, spins: 1, perSpin: 4 },
+            { id: 7, label: '1.550.000', total: 2, spins: 1, perSpin: 2 },
+            { id: 8, label: '1.750.000', total: 1, spins: 1, perSpin: 1 },
+            { id: 9, label: '2.150.000', total: 1, spins: 1, perSpin: 1 }
         ];
+
+
 
         let isDrawing = false;
 
@@ -760,7 +760,7 @@
 
                 $('#winnerName').text(winners[i]);
                 i++;
-            }, 5000);
+            }, 3000);
 
 
         }
@@ -1035,6 +1035,18 @@
 
         function showPhotoOverlay(prizeId) {
             const winners = JSON.parse(localStorage.getItem(STORAGE_WINNER)) || {};
+
+            // === KHUSUS GRAND PRIZE (2 PRIZE TERAKHIR) ===
+            const lastIndex = prizeConfig.length - 2;
+            const prizeA = prizeConfig[lastIndex];
+            const prizeB = prizeConfig[lastIndex + 1];
+
+            if (prizeId === prizeA.id || prizeId === prizeB.id) {
+                showPhotoOverlayDoubleFinal(prizeA, prizeB, winners);
+                return;
+            }
+
+            // === NORMAL (SATU PRIZE) ===
             const prize = prizeConfig.find(p => p.id === prizeId);
 
             if (!prize || !winners[prizeId] || winners[prizeId].length === 0) {
@@ -1217,6 +1229,94 @@ border: 2px solid #e5e7eb;
             $('#btn-close-overlay').removeClass('d-none');
         }
 
+        function showPhotoOverlayDoubleFinal(prizeA, prizeB, winners) {
+            const winnerA = winners[prizeA.id]?.[0];
+            const winnerB = winners[prizeB.id]?.[0];
+
+            if (!winnerA || !winnerB) {
+                alert('Pemenang Grand Prize belum lengkap');
+                return;
+            }
+
+            $('#photoCategory').html(`
+        🏆 GRAND PRIZE 🏆
+    `);
+
+            $('#photoNames').html(`
+        <div class="d-flex justify-content-evenly w-100">
+
+            <!-- SILVER -->
+            <div style="
+                width:650px;
+                padding:35px;
+                border-radius:28px;
+                background:linear-gradient(135deg,#1e293b,#020617);
+                box-shadow:0 0 35px rgba(230,230,230,.55);
+                border:2px solid #e5e7eb;
+                text-align:center;
+            ">
+                <div style="
+                    font-size:4rem;
+                    font-weight:900;
+                    letter-spacing:3px;
+                    color:#e5e7eb;
+                ">
+                    ${winnerA}
+                </div>
+                <div style="
+                    font-size:2rem;
+                    margin-top:20px;
+                    font-weight:700;
+                    color:#cbd5e1;
+                ">
+                    💰 Rp ${prizeA.label}
+                </div>
+            </div>
+
+            <!-- DIVIDER -->
+            <div style="
+                width:6px;
+                background:linear-gradient(
+                    180deg,
+                    transparent,
+                    #fbbf24,
+                    transparent
+                );
+            "></div>
+
+            <!-- GOLD -->
+            <div style="
+                width:650px;
+                padding:35px;
+                border-radius:28px;
+                background:linear-gradient(135deg,#1e293b,#020617);
+                box-shadow:0 0 35px rgba(251,191,36,.45);
+                border:2px solid #fbbf24;
+                text-align:center;
+            ">
+                <div style="
+                    font-size:4rem;
+                    font-weight:900;
+                    letter-spacing:3px;
+                    color:#fbbf24;
+                ">
+                    ${winnerB}
+                </div>
+                <div style="
+                    font-size:2rem;
+                    margin-top:20px;
+                    font-weight:700;
+                    color:#fbbf24;
+                ">
+                    💰 Rp ${prizeB.label}
+                </div>
+            </div>
+
+        </div>
+    `);
+
+            $('#photoOverlay').removeClass('d-none');
+        }
 
     </script>
 
